@@ -1,0 +1,157 @@
+name: Daily Hot Repo
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "5 4 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-hot-repo
+  cancel-in-progress: false
+
+jobs:
+  run-daily-hot-repo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Conda Mirror
+        shell: bash
+        run: |
+          cat > ~/.condarc <<'EOF'
+          channels:
+            - conda-forge
+            - defaults
+          show_channel_urls: true
+          channel_priority: flexible
+          default_channels:
+            - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+            - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+            - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+          custom_channels:
+            conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+          repodata_threads: 8
+          fetch_threads: 8
+          remote_max_retries: 3
+          EOF
+
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          activate-environment: Agent
+          auto-activate-base: false
+          auto-update-conda: true
+          python-version: "3.13"
+
+      - name: Install Python Dependencies
+        shell: bash
+        run: |
+          conda run -n Agent python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
+          conda run -n Agent python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple ".[dev]"
+
+      - name: Install Playwright Chromium
+        shell: bash
+        run: conda run -n Agent python -m playwright install --with-deps chromium
+
+      - name: Run Tests
+        shell: bash
+        run: conda run -n Agent python -m pytest
+
+      - name: Build Runtime Config
+        shell: bash
+        env:
+          AGENT_TIMEZONE: ${{ vars.AGENT_TIMEZONE || 'Asia/Shanghai' }}
+          AGENT_LLM_BASE_URL: ${{ vars.AGENT_LLM_BASE_URL }}
+          AGENT_LLM_MODEL: ${{ vars.AGENT_LLM_MODEL }}
+          AGENT_LLM_ENABLE_WEB_SEARCH: ${{ vars.AGENT_LLM_ENABLE_WEB_SEARCH || 'true' }}
+          AGENT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_LLM_API_KEY: ${{ secrets.AGENT_LLM_API_KEY }}
+          AGENT_FEISHU_WEBHOOK_URL: ${{ secrets.AGENT_FEISHU_WEBHOOK_URL }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import os
+
+          required_env_names = [
+              "AGENT_LLM_BASE_URL",
+              "AGENT_LLM_MODEL",
+              "AGENT_LLM_API_KEY",
+              "AGENT_FEISHU_WEBHOOK_URL",
+          ]
+          missing = [name for name in required_env_names if not os.environ.get(name)]
+          if missing:
+              raise SystemExit(f"缺少必要的 GitHub Actions 配置: {', '.join(missing)}")
+
+          web_search_raw = os.environ["AGENT_LLM_ENABLE_WEB_SEARCH"].strip().lower()
+          if web_search_raw not in {"true", "false"}:
+              raise SystemExit("AGENT_LLM_ENABLE_WEB_SEARCH 必须为 true 或 false。")
+
+          def toml_string(value: str) -> str:
+              return json.dumps(value, ensure_ascii=False)
+
+          config_content = f"""
+          [scheduler]
+          timezone = {toml_string(os.environ['AGENT_TIMEZONE'])}
+
+          [trendshift]
+          daily_explore_url = "https://trendshift.io/"
+          top_n = 10
+          browser_timeout_ms = 30000
+
+          [github]
+          api_base_url = "https://api.github.com"
+          token = {toml_string(os.environ['AGENT_GITHUB_TOKEN'])}
+          request_timeout_seconds = 30
+          tree_max_entries = 300
+          file_max_chars = 20000
+
+          [llm]
+          base_url = {toml_string(os.environ['AGENT_LLM_BASE_URL'])}
+          api_key = {toml_string(os.environ['AGENT_LLM_API_KEY'])}
+          model = {toml_string(os.environ['AGENT_LLM_MODEL'])}
+          enable_web_search = {web_search_raw}
+          max_rounds = 12
+
+          [feishu]
+          webhook_url = {toml_string(os.environ['AGENT_FEISHU_WEBHOOK_URL'])}
+
+          [runtime]
+          archive_dir = "runtime/archive"
+          state_file = "runtime/state/delivery_state.json"
+          """.strip() + "\n"
+
+          config_path = Path("config/app.ci.toml")
+          config_path.parent.mkdir(parents=True, exist_ok=True)
+          config_path.write_text(config_content, encoding="utf-8")
+          print(f"已生成运行配置: {config_path}")
+          PY
+
+      - name: Run Daily Workflow
+        shell: bash
+        env:
+          GITHUB_AGENT_CONFIG_PATH: config/app.ci.toml
+        run: conda run -n Agent python -m src.main
+
+      - name: Commit Runtime Changes
+        shell: bash
+        run: |
+          rm -f config/app.ci.toml
+          git add runtime/archive runtime/state/delivery_state.json
+          if git diff --cached --quiet; then
+            echo "没有新的归档或状态变更，跳过提交。"
+            exit 0
+          fi
+          current_date="$(TZ=Asia/Shanghai date +%F)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: archive daily hot repo ${current_date}"
+          git push

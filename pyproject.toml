@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "github-hot-repo-agent"
+version = "0.1.0"
+description = "Github 热门仓库推送 Agent 阶段三客户端实现"
+readme = "Docs/V1.0/开发计划 V1.0.md"
+requires-python = ">=3.13,<3.14"
+dependencies = ["playwright>=1.52,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=./.pytest_tmp"

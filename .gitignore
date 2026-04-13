@@ -1,0 +1,7 @@
+__pycache__/
+.pytest_cache/
+.pytest_tmp/
+*.pyc
+*.pyo
+*.pyd
+config/app.ci.toml

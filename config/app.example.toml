@@ -1,0 +1,28 @@
+[scheduler]
+timezone = "Asia/Shanghai"
+
+[trendshift]
+daily_explore_url = "https://trendshift.io/"
+top_n = 10
+browser_timeout_ms = 30000
+
+[github]
+api_base_url = "https://api.github.com"
+token = "github-token-placeholder"
+request_timeout_seconds = 30
+tree_max_entries = 300
+file_max_chars = 20000
+
+[llm]
+base_url = "https://api.example.com/v1"
+api_key = "llm-api-key-placeholder"
+model = "model-placeholder"
+enable_web_search = true
+max_rounds = 12
+
+[feishu]
+webhook_url = "https://open.feishu.cn/open-apis/bot/v2/hook/placeholder"
+
+[runtime]
+archive_dir = "runtime/archive"
+state_file = "runtime/state/delivery_state.json"
