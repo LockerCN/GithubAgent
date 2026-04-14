@@ -19,6 +19,7 @@ def test_load_valid_config_returns_app_config(tmp_path: Path) -> None:
     assert app_config.scheduler.timezone == "Asia/Shanghai"
     assert app_config.trendshift.top_n == 10
     assert app_config.github.file_max_chars == 20000
+    assert app_config.llm.request_timeout_seconds == 180
     assert app_config.llm.max_rounds == 12
     assert app_config.feishu.webhook_url.startswith("https://open.feishu.cn/")
     assert app_config.runtime.archive_dir == "runtime/archive"
@@ -30,6 +31,10 @@ def test_load_valid_config_returns_app_config(tmp_path: Path) -> None:
         ({"top_n": "top_n = 11"}, "trendshift.top_n"),
         ({"file_max_chars": "file_max_chars = 1000"}, "github.file_max_chars"),
         ({"max_rounds": "max_rounds = 0"}, "llm.max_rounds"),
+        (
+            {"llm_request_timeout_seconds": "request_timeout_seconds = 0"},
+            "llm.request_timeout_seconds",
+        ),
         (
             {"webhook_url": 'webhook_url = ""'},
             "feishu.webhook_url",
@@ -80,6 +85,7 @@ def _write_config(tmp_path: Path, **replacements: str) -> Path:
         base_url = "https://api.example.com/v1"
         api_key = "llm-api-key-placeholder"
         model = "model-placeholder"
+        request_timeout_seconds = 180
         enable_web_search = true
         max_rounds = 12
 
@@ -96,6 +102,10 @@ def _write_config(tmp_path: Path, **replacements: str) -> Path:
         'top_n = 10': replacements.get("top_n", 'top_n = 10'),
         'file_max_chars = 20000': replacements.get("file_max_chars", 'file_max_chars = 20000'),
         'max_rounds = 12': replacements.get("max_rounds", 'max_rounds = 12'),
+        'request_timeout_seconds = 180': replacements.get(
+            "llm_request_timeout_seconds",
+            'request_timeout_seconds = 180',
+        ),
         'webhook_url = "https://open.feishu.cn/open-apis/bot/v2/hook/placeholder"': replacements.get(
             "webhook_url",
             'webhook_url = "https://open.feishu.cn/open-apis/bot/v2/hook/placeholder"',

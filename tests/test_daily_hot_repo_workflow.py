@@ -210,6 +210,7 @@ def _build_app_config() -> AppConfig:
             base_url="https://api.example.com/v1",
             api_key="llm-api-key-placeholder",
             model="model-placeholder",
+            request_timeout_seconds=180,
             enable_web_search=True,
             max_rounds=12,
         ),

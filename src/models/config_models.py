@@ -31,6 +31,7 @@ class LlmConfig:
     base_url: str
     api_key: str
     model: str
+    request_timeout_seconds: int
     enable_web_search: bool
     max_rounds: int
 

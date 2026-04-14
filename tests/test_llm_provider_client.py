@@ -80,3 +80,20 @@ def test_create_agent_response_surfaces_http_error(monkeypatch: pytest.MonkeyPat
 
     with pytest.raises(LlmInvocationError, match="HTTP 状态码: 404"):
         client.create_agent_response(messages=[], tools=[], enable_web_search=False)
+
+
+def test_create_agent_response_surfaces_timeout_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_urlopen(*_args, **_kwargs):
+        raise TimeoutError("read timed out")
+
+    monkeypatch.setattr(llm_provider_client_module.request, "urlopen", fake_urlopen)
+
+    client = LlmProviderClient(
+        base_url="https://api.example.com/v1/responses",
+        api_key="llm-api-key-placeholder",
+        model="model-placeholder",
+        timeout_seconds=120,
+    )
+
+    with pytest.raises(LlmInvocationError, match="超过 120 秒"):
+        client.create_agent_response(messages=[], tools=[], enable_web_search=False)

@@ -150,6 +150,10 @@ class LlmProviderClient:
         try:
             with request.urlopen(http_request, timeout=timeout_seconds) as response:
                 response_body = response.read().decode("utf-8", errors="replace")
+        except TimeoutError as timeout_error:
+            raise LlmInvocationError(
+                f"大模型调用超时，超过 {timeout_seconds} 秒。"
+            ) from timeout_error
         except error.HTTPError as http_error:
             response_body = http_error.read().decode("utf-8", errors="replace")
             raise LlmInvocationError(

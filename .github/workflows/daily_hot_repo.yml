@@ -71,6 +71,7 @@ jobs:
           AGENT_TIMEZONE: ${{ vars.AGENT_TIMEZONE || 'Asia/Shanghai' }}
           AGENT_LLM_BASE_URL: ${{ vars.AGENT_LLM_BASE_URL }}
           AGENT_LLM_MODEL: ${{ vars.AGENT_LLM_MODEL }}
+          AGENT_LLM_REQUEST_TIMEOUT_SECONDS: ${{ vars.AGENT_LLM_REQUEST_TIMEOUT_SECONDS || '180' }}
           AGENT_LLM_ENABLE_WEB_SEARCH: ${{ vars.AGENT_LLM_ENABLE_WEB_SEARCH || 'true' }}
           AGENT_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_LLM_API_KEY: ${{ secrets.AGENT_LLM_API_KEY }}
@@ -94,6 +95,14 @@ jobs:
           web_search_raw = os.environ["AGENT_LLM_ENABLE_WEB_SEARCH"].strip().lower()
           if web_search_raw not in {"true", "false"}:
               raise SystemExit("AGENT_LLM_ENABLE_WEB_SEARCH 必须为 true 或 false。")
+          try:
+              llm_request_timeout_seconds = int(
+                  os.environ["AGENT_LLM_REQUEST_TIMEOUT_SECONDS"].strip()
+              )
+          except ValueError as error:
+              raise SystemExit("AGENT_LLM_REQUEST_TIMEOUT_SECONDS 必须为正整数。") from error
+          if llm_request_timeout_seconds <= 0:
+              raise SystemExit("AGENT_LLM_REQUEST_TIMEOUT_SECONDS 必须为正整数。")
 
           def toml_string(value: str) -> str:
               return json.dumps(value, ensure_ascii=False)
@@ -118,6 +127,7 @@ jobs:
           base_url = {toml_string(os.environ['AGENT_LLM_BASE_URL'])}
           api_key = {toml_string(os.environ['AGENT_LLM_API_KEY'])}
           model = {toml_string(os.environ['AGENT_LLM_MODEL'])}
+          request_timeout_seconds = {llm_request_timeout_seconds}
           enable_web_search = {web_search_raw}
           max_rounds = 12
 

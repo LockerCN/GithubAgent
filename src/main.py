@@ -67,6 +67,7 @@ def main() -> int:
             base_url=app_config.llm.base_url,
             api_key=app_config.llm.api_key,
             model=app_config.llm.model,
+            timeout_seconds=app_config.llm.request_timeout_seconds,
         )
         feishu_client = FeishuWebhookClient(webhook_url=app_config.feishu.webhook_url)
         archive_service = ArchiveService(archive_dir=archive_dir, repo_root=repo_root)

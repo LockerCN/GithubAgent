@@ -88,6 +88,7 @@ def _write_custom_app_config(tmp_path: Path, relative_path: str) -> Path:
         base_url = "https://api.example.com/v1"
         api_key = "llm-api-key-placeholder"
         model = "model-placeholder"
+        request_timeout_seconds = 180
         enable_web_search = true
         max_rounds = 12
 

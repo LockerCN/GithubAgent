@@ -18,6 +18,9 @@ from src.models.config_models import (
 )
 
 
+DEFAULT_LLM_REQUEST_TIMEOUT_SECONDS = 180
+
+
 class ConfigLoader:
     """负责读取并校验应用配置。"""
 
@@ -87,13 +90,21 @@ class ConfigLoader:
     def _build_llm_config(self, raw_config: dict[str, Any]) -> LlmConfig:
         section = self._require_section(raw_config, "llm")
         max_rounds = self._require_int(section, "max_rounds")
+        request_timeout_seconds = self._optional_int(
+            section,
+            "request_timeout_seconds",
+            DEFAULT_LLM_REQUEST_TIMEOUT_SECONDS,
+        )
         if max_rounds <= 0:
             raise ConfigurationError("llm.max_rounds 必须大于 0。")
+        if request_timeout_seconds <= 0:
+            raise ConfigurationError("llm.request_timeout_seconds 必须大于 0。")
 
         return LlmConfig(
             base_url=str(self._require_value(section, "base_url")),
             api_key=str(self._require_value(section, "api_key")),
             model=str(self._require_value(section, "model")),
+            request_timeout_seconds=request_timeout_seconds,
             enable_web_search=self._require_bool(section, "enable_web_search"),
             max_rounds=max_rounds,
         )
@@ -155,4 +166,17 @@ class ConfigLoader:
         value = self._require_value(section, field_name)
         if not isinstance(value, bool):
             raise ConfigurationError(f"配置项 {field_name} 必须为布尔值。")
+        return value
+
+    def _optional_int(
+        self,
+        section: dict[str, Any],
+        field_name: str,
+        default_value: int,
+    ) -> int:
+        if field_name not in section:
+            return default_value
+        value = section[field_name]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ConfigurationError(f"配置项 {field_name} 必须为整数。")
         return value
