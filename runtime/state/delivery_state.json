@@ -1,1 +1,11 @@
-{"records":[]}
+{
+  "records": [
+    {
+      "date": "2026-04-14",
+      "repo_full_name": "forrestchang/andrej-karpathy-skills",
+      "title": "Claude Code 行为指南：基于 Karpathy 编程哲学的 AI 指令集",
+      "archive_path": "runtime/archive/2026-04-14.md",
+      "delivered_at": "2026-04-14T17:33:07+08:00"
+    }
+  ]
+}
