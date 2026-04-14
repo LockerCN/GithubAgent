@@ -62,8 +62,8 @@ class GithubHotRepoAgentRuntime:
             )
             text_content = str(response.get("text_content") or "")
             tool_calls = response.get("tool_calls") or []
-
-            assistant_message = self._build_assistant_message(
+            assistant_message = self._resolve_assistant_message(
+                raw_assistant_message=response.get("assistant_message"),
                 text_content=text_content,
                 tool_calls=tool_calls,
             )
@@ -147,6 +147,16 @@ class GithubHotRepoAgentRuntime:
             risk_notes=risk_notes,
         )
 
+    def _resolve_assistant_message(
+        self,
+        raw_assistant_message: Any,
+        text_content: str,
+        tool_calls: list[dict],
+    ) -> dict | None:
+        if isinstance(raw_assistant_message, dict):
+            return self._copy_message(raw_assistant_message)
+        return self._build_assistant_message(text_content=text_content, tool_calls=tool_calls)
+
     def _build_assistant_message(self, text_content: str, tool_calls: list[dict]) -> dict | None:
         if not text_content.strip() and not tool_calls:
             return None
@@ -180,6 +190,25 @@ class GithubHotRepoAgentRuntime:
             "type": tool_call_type,
             "function": function_payload,
         }
+
+    def _copy_message(self, message: dict[str, Any]) -> dict[str, Any]:
+        copied_message = dict(message)
+        content = copied_message.get("content")
+        if isinstance(content, list):
+            copied_message["content"] = [
+                dict(item) if isinstance(item, dict) else item
+                for item in content
+            ]
+
+        tool_calls = copied_message.get("tool_calls")
+        if isinstance(tool_calls, list):
+            copied_message["tool_calls"] = [
+                self._build_tool_call_message(tool_call)
+                if isinstance(tool_call, dict)
+                else tool_call
+                for tool_call in tool_calls
+            ]
+        return copied_message
 
     def _parse_tool_arguments(self, tool_name: str, raw_arguments: Any) -> dict[str, Any]:
         if raw_arguments in (None, ""):

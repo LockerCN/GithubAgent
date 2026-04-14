@@ -78,6 +78,32 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
                 ],
                 "text_content": "",
                 "finish_reason": "tool_calls",
+                "assistant_message": {
+                    "role": "assistant",
+                    "content": [
+                        {"type": "text", "text": "准备调用工具。"},
+                        {
+                            "type": "function_call",
+                            "id": "call-1",
+                            "name": "echo_tool",
+                            "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
+                            "thought_signature": "sig-content-456",
+                        },
+                    ],
+                    "tool_calls": [
+                        {
+                            "id": "call-1",
+                            "name": "echo_tool",
+                            "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
+                            "type": "function",
+                            "function": {
+                                "name": "echo_tool",
+                                "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
+                                "thought_signature": "sig-123",
+                            },
+                        }
+                    ],
+                },
             },
             {
                 "tool_calls": [],
@@ -115,7 +141,9 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
     assert output.repo_full_name == "owner/repo"
     assert llm_client.calls[1]["messages"][-1]["role"] == "tool"
     assert llm_client.calls[1]["messages"][-1]["content"] == '{"echo": "hello"}'
-    assistant_tool_call = llm_client.calls[1]["messages"][-2]["tool_calls"][0]
+    assistant_message = llm_client.calls[1]["messages"][-2]
+    assistant_tool_call = assistant_message["tool_calls"][0]
+    assert assistant_message["content"][1]["thought_signature"] == "sig-content-456"
     assert assistant_tool_call["function"]["thought_signature"] == "sig-123"
 
 

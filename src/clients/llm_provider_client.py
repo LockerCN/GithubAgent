@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+# 文件说明：统一适配大模型响应，并保留多轮工具调用所需的原始 assistant 消息。
+
 """大模型提供商适配客户端实现。"""
 
 from __future__ import annotations
@@ -76,11 +79,19 @@ class LlmProviderClient:
             finish_reason = response_payload.get("finish_reason")
             if not isinstance(tool_calls, list):
                 raise LlmInvocationError("大模型返回的 tool_calls 必须为数组。")
-            return {
+            normalized_response = {
                 "tool_calls": tool_calls,
                 "text_content": "" if text_content is None else str(text_content),
                 "finish_reason": str(finish_reason),
             }
+            assistant_message = response_payload.get("assistant_message")
+            if assistant_message is not None:
+                normalized_response["assistant_message"] = self._normalize_assistant_message(
+                    assistant_message=assistant_message,
+                    normalized_content=None,
+                    normalized_tool_calls=tool_calls,
+                )
+            return normalized_response
 
         choices = response_payload.get("choices")
         if not isinstance(choices, list) or not choices:
@@ -94,10 +105,17 @@ class LlmProviderClient:
         if not isinstance(message, dict):
             raise LlmInvocationError("大模型返回的 message 非法。")
 
+        normalized_tool_calls = self._extract_tool_calls(message.get("tool_calls"))
+        normalized_content = self._normalize_message_content(message.get("content"))
         return {
-            "tool_calls": self._extract_tool_calls(message.get("tool_calls")),
-            "text_content": self._extract_text_content(message.get("content")),
+            "tool_calls": normalized_tool_calls,
+            "text_content": self._extract_text_content(normalized_content),
             "finish_reason": str(first_choice.get("finish_reason") or "stop"),
+            "assistant_message": self._normalize_assistant_message(
+                assistant_message=message,
+                normalized_content=normalized_content,
+                normalized_tool_calls=normalized_tool_calls,
+            ),
         }
 
     def _extract_tool_calls(self, raw_tool_calls: Any) -> list[dict[str, Any]]:
@@ -128,6 +146,21 @@ class LlmProviderClient:
 
         return normalized_calls
 
+    def _normalize_message_content(self, content: Any) -> str | list[dict[str, Any]] | None:
+        if content is None:
+            return None
+        if isinstance(content, str):
+            return content
+        if not isinstance(content, list):
+            raise LlmInvocationError("大模型返回的 content 非法。")
+
+        normalized_parts: list[dict[str, Any]] = []
+        for item in content:
+            if not isinstance(item, dict):
+                raise LlmInvocationError("大模型返回的 content 项非法。")
+            normalized_parts.append(dict(item))
+        return normalized_parts
+
     def _extract_text_content(self, content: Any) -> str:
         if content is None:
             return ""
@@ -140,6 +173,32 @@ class LlmProviderClient:
                     text_parts.append(str(item.get("text") or ""))
             return "".join(text_parts)
         raise LlmInvocationError("大模型返回的 content 非法。")
+
+    def _normalize_assistant_message(
+        self,
+        assistant_message: Any,
+        normalized_content: str | list[dict[str, Any]] | None,
+        normalized_tool_calls: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        if not isinstance(assistant_message, dict):
+            raise LlmInvocationError("大模型返回的 assistant_message 非法。")
+
+        normalized_message = dict(assistant_message)
+        normalized_message["role"] = str(assistant_message.get("role") or "assistant")
+        normalized_message["content"] = normalized_content
+        if normalized_tool_calls or "tool_calls" in assistant_message:
+            normalized_message["tool_calls"] = [
+                self._clone_tool_call(tool_call)
+                for tool_call in normalized_tool_calls
+            ]
+        return normalized_message
+
+    def _clone_tool_call(self, tool_call: dict[str, Any]) -> dict[str, Any]:
+        cloned_tool_call = dict(tool_call)
+        function_payload = cloned_tool_call.get("function")
+        if isinstance(function_payload, dict):
+            cloned_tool_call["function"] = dict(function_payload)
+        return cloned_tool_call
 
     def _send_request(
         self,
