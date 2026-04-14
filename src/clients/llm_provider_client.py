@@ -115,11 +115,14 @@ class LlmProviderClient:
             if not isinstance(function_payload, dict):
                 raise LlmInvocationError("大模型返回的 tool_call.function 非法。")
 
+            function_payload_copy = dict(function_payload)
             normalized_calls.append(
                 {
                     "id": str(item.get("id") or ""),
                     "name": str(function_payload.get("name") or ""),
                     "arguments": str(function_payload.get("arguments") or "{}"),
+                    "type": str(item.get("type") or "function"),
+                    "function": function_payload_copy,
                 }
             )
 

@@ -154,17 +154,32 @@ class GithubHotRepoAgentRuntime:
         message: dict[str, Any] = {"role": "assistant", "content": text_content}
         if tool_calls:
             message["tool_calls"] = [
-                {
-                    "id": str(tool_call.get("id") or ""),
-                    "type": "function",
-                    "function": {
-                        "name": str(tool_call.get("name") or ""),
-                        "arguments": str(tool_call.get("arguments") or "{}"),
-                    },
-                }
+                self._build_tool_call_message(tool_call)
                 for tool_call in tool_calls
             ]
         return message
+
+    def _build_tool_call_message(self, tool_call: dict[str, Any]) -> dict[str, Any]:
+        raw_function_payload = tool_call.get("function")
+        function_payload: dict[str, Any]
+        if isinstance(raw_function_payload, dict):
+            function_payload = dict(raw_function_payload)
+        else:
+            function_payload = {}
+
+        function_payload["name"] = str(
+            function_payload.get("name") or tool_call.get("name") or ""
+        )
+        function_payload["arguments"] = str(
+            function_payload.get("arguments") or tool_call.get("arguments") or "{}"
+        )
+
+        tool_call_type = str(tool_call.get("type") or "function")
+        return {
+            "id": str(tool_call.get("id") or ""),
+            "type": tool_call_type,
+            "function": function_payload,
+        }
 
     def _parse_tool_arguments(self, tool_name: str, raw_arguments: Any) -> dict[str, Any]:
         if raw_arguments in (None, ""):

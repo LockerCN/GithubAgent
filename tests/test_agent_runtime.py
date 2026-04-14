@@ -68,6 +68,12 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
                         "id": "call-1",
                         "name": "echo_tool",
                         "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
+                        "type": "function",
+                        "function": {
+                            "name": "echo_tool",
+                            "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
+                            "thought_signature": "sig-123",
+                        },
                     }
                 ],
                 "text_content": "",
@@ -109,6 +115,8 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
     assert output.repo_full_name == "owner/repo"
     assert llm_client.calls[1]["messages"][-1]["role"] == "tool"
     assert llm_client.calls[1]["messages"][-1]["content"] == '{"echo": "hello"}'
+    assistant_tool_call = llm_client.calls[1]["messages"][-2]["tool_calls"][0]
+    assert assistant_tool_call["function"]["thought_signature"] == "sig-123"
 
 
 def test_runtime_raises_parse_error_when_required_field_missing() -> None:

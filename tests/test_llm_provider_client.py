@@ -44,7 +44,11 @@ def test_create_agent_response_normalizes_chat_completion_style_payload() -> Non
                         "tool_calls": [
                             {
                                 "id": "call-1",
-                                "function": {"name": "get_repo", "arguments": '{"x":1}'},
+                                "function": {
+                                    "name": "get_repo",
+                                    "arguments": '{"x":1}',
+                                    "thought_signature": "sig-123",
+                                },
                             }
                         ],
                     },
@@ -58,6 +62,7 @@ def test_create_agent_response_normalizes_chat_completion_style_payload() -> Non
     assert response["finish_reason"] == "stop"
     assert response["text_content"] == '{"title":"demo"}'
     assert response["tool_calls"][0]["arguments"] == '{"x":1}'
+    assert response["tool_calls"][0]["function"]["thought_signature"] == "sig-123"
 
 
 def test_create_agent_response_surfaces_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
