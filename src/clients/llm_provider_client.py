@@ -134,15 +134,13 @@ class LlmProviderClient:
                 raise LlmInvocationError("大模型返回的 tool_call.function 非法。")
 
             function_payload_copy = dict(function_payload)
-            normalized_calls.append(
-                {
-                    "id": str(item.get("id") or ""),
-                    "name": str(function_payload.get("name") or ""),
-                    "arguments": str(function_payload.get("arguments") or "{}"),
-                    "type": str(item.get("type") or "function"),
-                    "function": function_payload_copy,
-                }
-            )
+            normalized_tool_call = dict(item)
+            normalized_tool_call["id"] = str(item.get("id") or "")
+            normalized_tool_call["name"] = str(function_payload.get("name") or "")
+            normalized_tool_call["arguments"] = str(function_payload.get("arguments") or "{}")
+            normalized_tool_call["type"] = str(item.get("type") or "function")
+            normalized_tool_call["function"] = function_payload_copy
+            normalized_calls.append(normalized_tool_call)
 
         return normalized_calls
 

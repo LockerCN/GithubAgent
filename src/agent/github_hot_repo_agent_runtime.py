@@ -170,6 +170,7 @@ class GithubHotRepoAgentRuntime:
         return message
 
     def _build_tool_call_message(self, tool_call: dict[str, Any]) -> dict[str, Any]:
+        normalized_tool_call = dict(tool_call)
         raw_function_payload = tool_call.get("function")
         function_payload: dict[str, Any]
         if isinstance(raw_function_payload, dict):
@@ -185,11 +186,10 @@ class GithubHotRepoAgentRuntime:
         )
 
         tool_call_type = str(tool_call.get("type") or "function")
-        return {
-            "id": str(tool_call.get("id") or ""),
-            "type": tool_call_type,
-            "function": function_payload,
-        }
+        normalized_tool_call["id"] = str(tool_call.get("id") or "")
+        normalized_tool_call["type"] = tool_call_type
+        normalized_tool_call["function"] = function_payload
+        return normalized_tool_call
 
     def _copy_message(self, message: dict[str, Any]) -> dict[str, Any]:
         copied_message = dict(message)

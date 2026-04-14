@@ -117,6 +117,51 @@ def test_create_agent_response_preserves_raw_assistant_message_parts() -> None:
     )
 
 
+def test_create_agent_response_preserves_tool_call_top_level_extensions() -> None:
+    client = LlmProviderClient(
+        base_url="https://api.example.com/v1/chat/completions",
+        api_key="llm-api-key-placeholder",
+        model="model-placeholder",
+        request_sender=lambda *_: {
+            "choices": [
+                {
+                    "finish_reason": "tool_calls",
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "call-1",
+                                "type": "function",
+                                "function": {
+                                    "name": "get_repo",
+                                    "arguments": '{"x":1}',
+                                },
+                                "extra_content": {
+                                    "google": {
+                                        "thought_signature": "sig-extra-123",
+                                    }
+                                },
+                            }
+                        ],
+                    },
+                }
+            ]
+        },
+    )
+
+    response = client.create_agent_response(messages=[], tools=[], enable_web_search=False)
+
+    assert (
+        response["tool_calls"][0]["extra_content"]["google"]["thought_signature"]
+        == "sig-extra-123"
+    )
+    assert (
+        response["assistant_message"]["tool_calls"][0]["extra_content"]["google"]["thought_signature"]
+        == "sig-extra-123"
+    )
+
+
 def test_create_agent_response_surfaces_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_urlopen(*_args, **_kwargs):
         raise urllib_error.HTTPError(

@@ -74,6 +74,11 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
                             "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
                             "thought_signature": "sig-123",
                         },
+                        "extra_content": {
+                            "google": {
+                                "thought_signature": "sig-extra-789",
+                            }
+                        },
                     }
                 ],
                 "text_content": "",
@@ -100,6 +105,11 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
                                 "name": "echo_tool",
                                 "arguments": json.dumps({"value": "hello"}, ensure_ascii=False),
                                 "thought_signature": "sig-123",
+                            },
+                            "extra_content": {
+                                "google": {
+                                    "thought_signature": "sig-extra-789",
+                                }
                             },
                         }
                     ],
@@ -145,6 +155,7 @@ def test_runtime_executes_tool_call_then_parses_final_output() -> None:
     assistant_tool_call = assistant_message["tool_calls"][0]
     assert assistant_message["content"][1]["thought_signature"] == "sig-content-456"
     assert assistant_tool_call["function"]["thought_signature"] == "sig-123"
+    assert assistant_tool_call["extra_content"]["google"]["thought_signature"] == "sig-extra-789"
 
 
 def test_runtime_raises_parse_error_when_required_field_missing() -> None:
