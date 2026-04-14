@@ -160,8 +160,8 @@ class LlmProviderClient:
 
         try:
             payload = json.loads(response_body)
-        except json.JSONDecodeError as error:
-            raise LlmInvocationError("大模型返回非 JSON 响应。") from error
+        except json.JSONDecodeError as json_error:
+            raise LlmInvocationError("大模型返回非 JSON 响应。") from json_error
 
         if not isinstance(payload, dict):
             raise LlmInvocationError("大模型返回的 JSON 根节点非法。")

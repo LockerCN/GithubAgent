@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           conda run -n Agent python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
-          conda run -n Agent python -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple ".[dev]"
+          conda run -n Agent python -m pip install --no-build-isolation -i https://pypi.tuna.tsinghua.edu.cn/simple ".[dev]"
 
       - name: Install Playwright Chromium
         shell: bash
