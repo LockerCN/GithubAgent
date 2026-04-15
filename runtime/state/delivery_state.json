@@ -1,6 +1,13 @@
 {
   "records": [
     {
+      "date": "2026-04-15",
+      "repo_full_name": "shanraisshan/claude-code-best-practice",
+      "title": "Claude Code 最佳实践指南：从“氛围编码”进化到“智能体工程”",
+      "archive_path": "runtime/archive/2026-04-15.md",
+      "delivered_at": "2026-04-15T14:07:55+08:00"
+    },
+    {
       "date": "2026-04-14",
       "repo_full_name": "forrestchang/andrej-karpathy-skills",
       "title": "Claude Code 行为指南：基于 Karpathy 编程哲学的 AI 指令集",
