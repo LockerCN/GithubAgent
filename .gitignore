@@ -209,3 +209,6 @@ __marimo__/
 
 # Project specific
 config/app.ci.toml
+AGENTS.md
+Docs/
+memory-bank/
