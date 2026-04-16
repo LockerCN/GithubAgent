@@ -1,6 +1,13 @@
 {
   "records": [
     {
+      "date": "2026-04-16",
+      "repo_full_name": "VoltAgent/awesome-design-md",
+      "title": "Awesome DESIGN.md：让 AI 代理像素级复刻大厂 UI 设计",
+      "archive_path": "runtime/archive/2026-04-16.md",
+      "delivered_at": "2026-04-16T14:11:03+08:00"
+    },
+    {
       "date": "2026-04-15",
       "repo_full_name": "shanraisshan/claude-code-best-practice",
       "title": "Claude Code 最佳实践指南：从“氛围编码”进化到“智能体工程”",
