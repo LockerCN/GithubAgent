@@ -1,5 +1,25 @@
 # -*- coding: utf-8 -*-
-# 文件说明：实现阶段四 Agent 运行时与工具调用循环。
+# 文件说明：实现 Agent 与大模型、工具之间的完整对话循环。
+# 核心职责：
+# 1. 组装首轮 `system` / `user` 消息。
+# 2. 调用大模型并接收工具调用请求。
+# 3. 执行本地工具并把结果回填给模型继续推理。
+# 4. 在最终轮解析模型返回的 JSON，转换为 `AgentOutput`。
+# 调用关系：
+# 1. `src/workflows/daily_hot_repo_workflow.py` 调用 `run()` 作为核心推理入口。
+# 2. `PromptFactory` 提供首轮提示词。
+# 3. `ToolRegistry` 提供工具 schema 与执行能力。
+# 4. `LlmProviderClient` 负责真正发起模型请求。
+# 直接影响：
+# 1. 工具调用循环是否稳定。
+# 2. 模型最终输出字段是否能被程序接受。
+# 3. 供应商兼容字段是否会在多轮对话中丢失。
+# 4. 提示词修改后，最终输出能否顺利落入固定 JSON 结构。
+# 上手建议：
+# 1. 想看提示词如何进入模型，先看 `_build_initial_messages()`。
+# 2. 想看工具调用闭环，重点看 `_run_loop()` 与 `_handle_tool_calls()`。
+# 3. 想改最终 JSON 字段，重点看 `_parse_output()`。
+# 4. 若线上再次出现工具调用协议问题，优先检查 `_resolve_assistant_message()` 与 `_build_tool_call_message()`。
 
 """Github 热门仓库 Agent 运行时实现。"""
 
